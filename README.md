@@ -17,6 +17,9 @@ resource_types:
 ## Source Configuration
 
 * `package`: *Required.* Package name.
+* `registry.uri`: *Optional.* Registry containing the package.
+* `registry.token`: *Optional.* Access credentials for the registry.
+* `registry.scope`: *Optional.* Limit registry to a single scope.
 
 ## Behavior
 
@@ -41,6 +44,10 @@ resources:
   check_every: 24h
   source:
     package: jasmine
+    registry:
+      uri: https://private.registry.domain/some/path
+      token: NpmToken.as-seen-in-HOME-.npmrc
+      scope: @myorg
 ```
 
 Add to job:

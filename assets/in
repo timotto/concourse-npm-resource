@@ -6,9 +6,7 @@ set -o pipefail
 exec 3>&1 # make stdout available as fd 3 for the result
 exec 1>&2 # redirect all output to stderr for logging
 
-source /opt/resource/common.sh
-
-cd "$1"
+source $(dirname "$0")/common.sh
 
 # Read inputs
 payload=$(mktemp $TMPDIR/request-payload.XXXXXX)
@@ -32,13 +30,14 @@ fi
 setup_resource $payload
 echo "Resource setup successful."
 
+yarn add \
+    $yarn_args \
+    --link-folder $1/link-folder \
+    --global-folder $1/global-folder \
+    --modules-folder $1/node_modules \
+    --cache-folder $1/cache-folder \
+    "$package"
+
 echo "{\"version\":{\"version\":\"$version_string\"}" \
 | jq . \
 >&3
-# apt-get -o Dir::Etc::sourcelist=/apt.list download ${package}=${version_string}
-# read bytes filename < <(stat -c "%s %n" ${package}_${version_string}*.deb)
-# read sha tmp < <(sha256sum "$filename")
-# metadata="[{\"name\":\"size\",\"value\":\"$bytes\"},{\"name\":\"filename\",\"value\":\"$filename\"},{\"name\":\"sha256\",\"value\":\"$sha\"}]"
-# echo "{\"version\":{\"version\":\"$version_string\"},\"metadata\":$metadata}" \
-# | jq . \
-# >&3
