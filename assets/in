@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+source /opt/resource/common.sh
+
+cd "$1"
+
+# Read inputs
+payload=$(mktemp $TMPDIR/request-payload.XXXXXX)
+cat > $payload <&0
+
+package=$(jq -r '.source.package // ""' < $payload)
+
+if [ -z "$package" ]; then
+  echo "invalid payload (missing package)"
+  exit 1
+fi
+
+version_string=$(jq -r '.version.version // ""' < $payload)
+
+if [ -z "$version_string" ]; then
+  echo "invalid payload (missing version)"
+  exit 1
+fi
+
+# Prepare
+setup_resource $payload
+echo "Resource setup successful."
+
+echo "{\"version\":{\"version\":\"$version_string\"}" \
+| jq . \
+>&3
+# apt-get -o Dir::Etc::sourcelist=/apt.list download ${package}=${version_string}
+# read bytes filename < <(stat -c "%s %n" ${package}_${version_string}*.deb)
+# read sha tmp < <(sha256sum "$filename")
+# metadata="[{\"name\":\"size\",\"value\":\"$bytes\"},{\"name\":\"filename\",\"value\":\"$filename\"},{\"name\":\"sha256\",\"value\":\"$sha\"}]"
+# echo "{\"version\":{\"version\":\"$version_string\"},\"metadata\":$metadata}" \
+# | jq . \
+# >&3

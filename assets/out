@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "put is not supported by this resource"
+exit 1

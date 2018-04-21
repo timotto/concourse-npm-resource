@@ -1,0 +1,34 @@
+resource_types:
+- name: npm
+  type: docker-image
+  source:
+    repository: timotto/concourse-npm-resource
+
+resources:
+- name: requestify
+  type: npm
+  check_every: 24h
+  source:
+    package: requestify
+
+jobs:
+- name: build-app
+  plan:
+  - get: requestify
+    trigger: true
+  - task: demo
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: alpine
+      inputs:
+      - name: requestify
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          find .
+          ls -la *
