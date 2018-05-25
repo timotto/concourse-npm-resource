@@ -26,6 +26,15 @@ if [ -z "$package_path" ]; then
   exit 1
 fi
 
+version=$(jq -r '.params.version // ""' < $payload)
+if [ -n "$version" ]; then
+  if [ ! -f "$version" ]; then
+    echo "unable to find version file '$version'"
+    exit 1
+  fi
+  version_string="$(cat "$version")"
+fi
+
 # Prepare
 setup_resource $payload
 echo "Resource setup successful."
@@ -33,6 +42,12 @@ echo "Resource setup successful."
 publish_result_file=$(mktemp $TMPDIR/publish-result.XXXXXX)
 
 cd "$1/$package_path"
+
+# optional version override though "params: {version: path/to/version/file}"
+[ -n "$version_string" ] \
+&& npm version "$version_string" \
+|| true
+
 npm publish > $publish_result_file 2>&1
 
 publish_result_code=$?
