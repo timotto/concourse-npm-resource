@@ -9,7 +9,7 @@ exec 1>&2 # redirect all output to stderr for logging
 source $(dirname "$0")/common.sh
 
 # Read inputs
-payload=$(mktemp $TMPDIR/request-payload.XXXXXX)
+payload=$(mktemp request-payload.XXXXXX)
 cat > $payload <&0
 
 package=$(jq -r '.source.package // ""' < $payload)
@@ -30,14 +30,19 @@ fi
 setup_resource $payload
 echo "Resource setup successful."
 
+[ -n "$scope" ] \
+&& fqpn="@$scope/$package" \
+|| fqpn="$package"
+
+echo "Loading package $fpqn version $version_string"
 yarn add \
     $yarn_args \
     --link-folder $1/link-folder \
     --global-folder $1/global-folder \
     --modules-folder $1/node_modules \
     --cache-folder $1/cache-folder \
-    "$package"
+    "$fqpn@$version_string"
 
-echo "{\"version\":{\"version\":\"$version_string\"}" \
+echo "{\"version\":{\"version\":\"$version_string\"}}" \
 | jq . \
 >&3

@@ -1,4 +1,5 @@
 #!/bin/bash
+
 set -e
 
 registry=""
@@ -17,22 +18,27 @@ setup_npmrc() {
         
         echo "${token_target}:_authToken=$token" \
         >> $HOME/.npmrc
+
+        echo "  Using token for authentication"
     fi
 
     if [ -n "$scope" ]; then
         if [ -z "$registry" ]; then
-          echo "invalid payload (defined scope but missing registry)"
+          echo "  invalid payload (defined scope but missing registry)"
           exit 1
         fi
 
-        echo "${scope}:registry=${registry}" \
+        echo "@${scope}:registry=${registry}" \
         >> $HOME/.npmrc
+
+        echo "  Scope limited to @$scope"
     fi
 
     if [ -n "$registry" ]; then
         if [ -z "$scope" ]; then
             yarn_args="--registry $registry "
         fi
+        echo "  Registry is $registry"
     fi
 }
 

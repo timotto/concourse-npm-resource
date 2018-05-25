@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 set -o pipefail
@@ -8,8 +8,11 @@ exec 1>&2 # redirect all output to stderr for logging
 
 source $(dirname "$0")/common.sh
 
+publish_result_file=$(mktemp publish-result.XXXXXX)
+publish_error_file=$(mktemp publish-error.XXXXXX)
+
 # Read inputs
-payload=$(mktemp $TMPDIR/request-payload.XXXXXX)
+payload=$(mktemp request-payload.XXXXXX)
 cat > $payload <&0
 
 package=$(jq -r '.source.package // ""' < $payload)
@@ -39,8 +42,6 @@ fi
 setup_resource $payload
 echo "Resource setup successful."
 
-publish_result_file=$(mktemp $TMPDIR/publish-result.XXXXXX)
-
 cd "$1/$package_path"
 
 # optional version override though "params: {version: path/to/version/file}"
@@ -48,15 +49,19 @@ cd "$1/$package_path"
 && npm version "$version_string" \
 || true
 
-npm publish > $publish_result_file 2>&1
+echo "Publishing..."
+npm publish \
+> $publish_result_file \
+2> $publish_result_file \
+&& publish_result_code=$? \
+|| publish_result_code=$?
 
-publish_result_code=$?
 if [ $publish_result_code -ne 0 ]; then
-  cat $publish_result_file >&3
+  cat $publish_result_file
   exit 1
 fi
 
-version_string=$(sed -es'|^+ @'$scope'/'$package'@||')
-echo "{\"version\":{\"version\":\"$version_string\"}" \
+version_string=$(sed -es'|^+ @'$scope'/'$package'@||' < $publish_result_file)
+echo "{\"version\":{\"version\":\"$version_string\"}}" \
 | jq . \
 >&3
