@@ -12,16 +12,12 @@ source $(dirname "$0")/common.sh
 payload=$(mktemp request-payload.XXXXXX)
 cat > $payload <&0
 
-package=$(jq -r '.source.package // ""' < $payload)
-
-if [ -z "$package" ]; then
-  echo "invalid payload (missing package)"
-  exit 1
-fi
-
 # Prepare
-setup_resource $payload
+setup_resource
 echo "Resource setup successful."
+
+[ -z "$registry" ] \
+|| yarn_args="--registry $registry"
 
 yarn info \
     $yarn_args \

@@ -7,7 +7,6 @@ scope=""
 yarn_args=""
 
 setup_npmrc() {
-    payload=$1
     registry=$(jq -r '.source.registry.uri // ""' < $payload)
     token=$(jq -r '.source.registry.token // ""' < $payload)
     scope=$(jq -r '.source.registry.scope // ""' < $payload)
@@ -42,7 +41,17 @@ setup_npmrc() {
     fi
 }
 
+setup_package() {
+    package=$(jq -r '.source.package // ""' < $payload)
+
+    if [ -z "$package" ]; then
+      echo "invalid payload (missing package)"
+      exit 1
+    fi
+}
+
 setup_resource() {
     echo "Initializing npmrc..."
     setup_npmrc $1 $2
+    setup_package $1
 }
