@@ -19,9 +19,13 @@ echo "Resource setup successful."
 [ -z "$registry" ] \
 || yarn_args="--registry $registry"
 
+[ -n "$scope" ] \
+&& fqpn="@$scope/$package" \
+|| fqpn="$package"
+
 yarn info \
     $yarn_args \
     --json \
-    "$package" \
+    "$fqpn" \
 | jq '[{version:.data["dist-tags"].latest}]' \
 >&3
