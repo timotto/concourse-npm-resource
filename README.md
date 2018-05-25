@@ -27,9 +27,9 @@ resource_types:
 
 The latest version of the package available using the source.list line are returned.
 
-### `in`: Not supported.
+### `in`: Download the package
 
-### `out`: Not supported.
+### `out`: Publish the package
 
 ## Example
 
