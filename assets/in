@@ -29,9 +29,7 @@ echo "Resource setup successful."
 && fqpn="@$scope/$package" \
 || fqpn="$package"
 
-if [ "$skip_download" = "true" ]; then
-  echo "Skipping download"
-else
+if [ -z "$skip_download" ]; then
   echo "Loading package $fqpn version $version_string"
   yarn add \
     $yarn_args \
@@ -40,6 +38,8 @@ else
     --modules-folder $1/node_modules \
     --cache-folder $1/cache-folder \
     "$fqpn@$version_string"
+else
+  echo "Skipping download"
 fi
 
 echo "$version_string" \

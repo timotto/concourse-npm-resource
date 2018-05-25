@@ -11,10 +11,38 @@ resources:
   source:
     package: requestify
 
+- name: dummy-module
+  type: npm
+  check_every: 1h
+  source:
+    package: dummy-module
+    scope: tym
+    registry:
+      uri: https://nexus.timotto.io/repository/my-npm/
+      token: ((npm.token))
+
+- name: dummy-module-source
+  type: git
+  source:
+    uri: ssh://git@git.anyting.io:10022/tim/dummy-npm-module.git
+    private_key: ((git.key))
+
 jobs:
+- name: module
+  plan:
+  - get: dummy-module-source
+    trigger: true
+  - put: dummy-module
+    params:
+      path: dummy-module-source
+
 - name: build-app
   plan:
   - get: requestify
+    trigger: true
+    params:
+      skip_download: true
+  - get: dummy-module
     trigger: true
   - task: demo
     config:
@@ -25,6 +53,7 @@ jobs:
           repository: alpine
       inputs:
       - name: requestify
+      - name: dummy-module
       run:
         path: sh
         args:
