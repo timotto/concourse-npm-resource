@@ -9,7 +9,7 @@ exec 1>&2 # redirect all output to stderr for logging
 source $(dirname "$0")/common.sh
 
 # Read inputs
-payload=$(mktemp request-payload.XXXXXX)
+payload=$(mktemp $TMPDIR/request-payload.XXXXXX)
 cat > $payload <&0
 
 version_string=$(jq -r '.version.version // ""' < $payload)
@@ -35,6 +35,9 @@ yarn add \
     --modules-folder $1/node_modules \
     --cache-folder $1/cache-folder \
     "$fqpn@$version_string"
+
+echo "$version_string" \
+> $1/version
 
 echo "{\"version\":{\"version\":\"$version_string\"}}" \
 | jq . \

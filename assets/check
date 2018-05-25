@@ -9,7 +9,7 @@ exec 1>&2 # redirect all output to stderr for logging
 source $(dirname "$0")/common.sh
 
 # Read inputs
-payload=$(mktemp request-payload.XXXXXX)
+payload=$(mktemp $TMPDIR/request-payload.XXXXXX)
 cat > $payload <&0
 
 # Prepare

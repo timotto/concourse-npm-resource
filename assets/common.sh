@@ -2,17 +2,15 @@
 
 set -e
 
+TMPDIR=/tmp
+
 registry=""
 scope=""
 yarn_args=""
 
 setup_npmrc() {
-    registry=$(jq -r '.source.registry.uri // ""' < $payload)
-    token=$(jq -r '.source.registry.token // ""' < $payload)
-    scope=$(jq -r '.source.registry.scope // ""' < $payload)
-
     if [ -n "$token" ]; then
-        token_target="${registry:-https://npm.timotto.io/repository/my-npm/}"
+        token_target="${registry:-https://registry.npmjs.org/}"
         token_target="${token_target/http*:/}"
         
         echo "${token_target}:_authToken=$token" \
@@ -42,8 +40,6 @@ setup_npmrc() {
 }
 
 setup_package() {
-    package=$(jq -r '.source.package // ""' < $payload)
-
     if [ -z "$package" ]; then
       echo "invalid payload (missing package)"
       exit 1
@@ -51,6 +47,11 @@ setup_package() {
 }
 
 setup_resource() {
+    registry=$(jq -r '.source.registry.uri // ""' < $payload)
+    token=$(jq -r '.source.registry.token // ""' < $payload)
+    scope=$(jq -r '.source.scope // ""' < $payload)
+    package=$(jq -r '.source.package // ""' < $payload)
+
     echo "Initializing npmrc..."
     setup_npmrc $1 $2
     setup_package $1
