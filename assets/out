@@ -32,7 +32,7 @@ echo "Resource setup successful."
 
 publish_result_file=$(mktemp $TMPDIR/publish-result.XXXXXX)
 
-cd "$package_path"
+cd "$1/$package_path"
 npm publish > $publish_result_file 2>&1
 
 publish_result_code=$?
