@@ -19,6 +19,8 @@ if [ -z "$version_string" ]; then
   exit 1
 fi
 
+skip_download=$(jq -r '.source.skip_download // ""' < $payload)
+
 # Prepare
 setup_resource
 echo "Resource setup successful."
@@ -27,14 +29,18 @@ echo "Resource setup successful."
 && fqpn="@$scope/$package" \
 || fqpn="$package"
 
-echo "Loading package $fqpn version $version_string"
-yarn add \
+if [ "$skip_download" = "true" ]; then
+  echo "Skipping download"
+else
+  echo "Loading package $fqpn version $version_string"
+  yarn add \
     $yarn_args \
     --link-folder $1/link-folder \
     --global-folder $1/global-folder \
     --modules-folder $1/node_modules \
     --cache-folder $1/cache-folder \
     "$fqpn@$version_string"
+fi
 
 echo "$version_string" \
 > $1/version
