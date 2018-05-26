@@ -24,11 +24,11 @@ fi
 
 version=$(jq -r '.params.version // ""' < $payload)
 if [ -n "$version" ]; then
-  if [ ! -f "$version" ]; then
+  if [ ! -f "$1/$version" ]; then
     echo "unable to find version file '$version'"
     exit 1
   fi
-  version_string="$(cat "$version")"
+  version_string="$(cat "$1/$version")"
 fi
 
 # Prepare
