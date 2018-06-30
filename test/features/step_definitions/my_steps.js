@@ -1,7 +1,11 @@
-const {Given, Then, When, BeforeAll, setDefaultTimeout} = require('cucumber');
+const { Given, Then, When, BeforeAll, Before, After, setDefaultTimeout } = require('cucumber');
 const assert = require('assert');
-const {sourceDefinition} = require('../../src/pipeline-fixture');
-const {spawnIn} = require('../../src/resource-runner');
+const fs = require('fs-extra');
+const path = require('path');
+const mktemp = require('mktemp');
+
+const { sourceDefinition } = require('../../src/pipeline-fixture');
+const { spawnIn } = require('../../src/resource-runner');
 
 const assertEnv = key => {
   if (process.env[key] === undefined) throw `${key} is undefined`;
@@ -14,6 +18,7 @@ console.log(`DOCKER_IMAGE=${unitUnderTest}`);
 
 let testRegistry;
 let credentials;
+
 BeforeAll(() => {
   testRegistry = assertEnv('TEST_REGISTRY');
   credentials = {
@@ -24,20 +29,36 @@ BeforeAll(() => {
   }
 });
 
-Given(/^a source configuration for package "([^"]*)"$/, async packageName => {
-  this['source'] = sourceDefinition(packageName);
+Before(async () => {
+  const base = path.join(process.cwd(), 'tmp');
+  await fs.mkdirs(base);
+  this.tempDir = await mktemp.createDir(path.join(base, 'npm-resource-test-volume-XXXXXXXX'));
+  this.input = {};
 });
 
-Given(/^a source configuration for private package "(.*)" with (.*) credentials$/, async (privatePackageName,credentialSet) =>
-  this.source = sourceDefinition(privatePackageName, undefined, {uri: testRegistry, token: credentials[credentialSet]}));
+After(async () =>
+  fs.remove(this.tempDir));
 
-When(/^the resource is checked$/, async () => {
-  const command = 'docker';
-  const args = ['run','-i','--rm',unitUnderTest,'/opt/resource/check'];
-  const input = JSON.stringify({source: this['source'].source});
+Given(/^a source configuration for package "([^"]*)"$/, async packageName =>
+  this.input.source = sourceDefinition(packageName));
 
-  this['result'] = await spawnIn(command, args, input);
-});
+Given(/^a source configuration for private package "(.*)" with (.*) credentials$/, async (privatePackageName, credentialSet) =>
+  this.input.source = sourceDefinition(privatePackageName, undefined, { uri: testRegistry, token: credentials[credentialSet] }));
+
+Given(/^a get step with no params$/, () =>
+  this.input.params = {});
+
+Given(/^a known version "(.*)" for the resource$/, version =>
+  this.input.version = { version });
+
+When(/^the resource is checked$/, async () =>
+  runResource('check'));
+
+When(/^the resource is fetched$/, async () =>
+  runResource('in'));
+
+Then(/^an error is returned$/, () =>
+  assert.notEqual(this.result.code, 0));
 
 Then(/^version "([^"]*)" is returned$/, expectedVersion => {
   assert.strictEqual(this.result.code, 0);
@@ -48,5 +69,30 @@ Then(/^version "([^"]*)" is returned$/, expectedVersion => {
   assert.strictEqual(j[0].version, expectedVersion);
 });
 
-Then(/^an error is returned$/, () => assert.notEqual(this.result.code, 0, JSON.stringify({source: this.source, result: this.result})));
+Then(/^the content of file "(.*)" is "(.*)"$/, async (filename, content) => {
+  const expectedContent = `${content}\n`;
+  const actualContent = await fs.readFile(path.join(this.tempDir, filename), 'utf-8');
+  assert.strictEqual(actualContent, expectedContent);
+});
 
+Then(/^the file "(.*)" does exist$/, async filename =>
+  findTempFile(filename));
+
+Then(/^the file "(.*)" does not exist$/, async filename =>
+  findTempFile(filename)
+    .then(exists => !exists));
+
+const findTempFile = async filename =>
+  fs.pathExists(path.join(this.tempDir, filename))
+    .then(exists => exists);
+
+const runResource = async command =>
+  spawnIn('docker', [
+    'run', '--rm', '-i',
+    '-v', `${this.tempDir}:/test-volume`,
+    '-w', '/test-volume',
+    unitUnderTest,
+    `/opt/resource/${command}`,
+    '/test-volume'
+  ], JSON.stringify(this.input))
+    .then(result => this.result = result);
