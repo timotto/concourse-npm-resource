@@ -23,9 +23,13 @@ echo "Resource setup successful."
 && fqpn="@$scope/$package" \
 || fqpn="$package"
 
-yarn info \
+result=`yarn info \
     $yarn_args \
     --json \
     "$fqpn" \
-| jq '[{version:.data["dist-tags"].latest}]' \
->&3
+| jq '[{version:.data["dist-tags"].latest}]'`
+
+echo "$result" >&3
+
+[ -n "$result" ] \
+|| exit 1
