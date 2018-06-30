@@ -45,8 +45,8 @@ Given(/^a source configuration for package "([^"]*)"$/, async packageName =>
 Given(/^a source configuration for private package "(.*)" with (.*) credentials$/, async (privatePackageName, credentialSet) =>
   this.input.source = sourceDefinition(privatePackageName, undefined, { uri: testRegistry, token: credentials[credentialSet] }));
 
-Given(/^a get step with no params$/, () =>
-  this.input.params = {});
+Given(/^a get step with skip_download: (.*) params$/, skipDownload =>
+  this.input.params = {skip_download: skipDownload === 'true'});
 
 Given(/^a known version "(.*)" for the resource$/, version =>
   this.input.version = { version });
@@ -76,15 +76,13 @@ Then(/^the content of file "(.*)" is "(.*)"$/, async (filename, content) => {
 });
 
 Then(/^the file "(.*)" does exist$/, async filename =>
-  findTempFile(filename));
+  assert.strictEqual(await findTempFile(filename),true));
 
 Then(/^the file "(.*)" does not exist$/, async filename =>
-  findTempFile(filename)
-    .then(exists => !exists));
+  assert.strictEqual(await findTempFile(filename),false));
 
 const findTempFile = async filename =>
-  fs.pathExists(path.join(this.tempDir, filename))
-    .then(exists => exists);
+  fs.pathExists(path.join(this.tempDir, filename));
 
 const runResource = async command =>
   spawnIn('docker', [

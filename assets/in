@@ -19,7 +19,7 @@ if [ -z "$version_string" ]; then
   exit 1
 fi
 
-skip_download=$(jq -r '.source.skip_download // ""' < $payload)
+skip_download=$(jq -r '.params.skip_download // ""' < $payload)
 
 # Prepare
 setup_resource
