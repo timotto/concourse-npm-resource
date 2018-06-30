@@ -23,15 +23,26 @@ resource_types:
 
 ## Behavior
 
-### `check`: Check for new releases
+### `check`: Check for new versions of the package
 
 The latest version of the package available using the source.list line is returned.
 
-### `in`: Download the package
+### `in`: Fetch a version of the package
+
+Fetches a given package, placing the following in the destination:
+
+* `version`: The version number of the package.
+* `node_modules`: The package including dependencies.
+
+#### Parameters
 
 * `skip_download`: *Optional.* Do not download the package including dependencies, just save the version file.
 
-### `out`: Publish the package
+### `out`: Publish a package
+
+Publishes the given NPM package to a private or public registry.
+
+#### Parameters
 
 * `path`: *Required.* Path to the directory containing the `package.json` file.
 * `version`: *Optional.* Path to a file containing the version, overrides the version stored in `package.json`.
