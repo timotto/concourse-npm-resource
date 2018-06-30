@@ -1,0 +1,16 @@
+{
+  "name": "npm-resource-bdd-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "cucumber-js || exit 1",
+    "tests": "nodemon -w . -e '*.js,*.feature' --exec npm run test"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "cucumber": "^4.2.1",
+    "nodemon": "^1.17.5"
+  }
+}
