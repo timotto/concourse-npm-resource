@@ -8,6 +8,8 @@ exec 1>&2 # redirect all output to stderr for logging
 
 source $(dirname "$0")/common.sh
 
+cd "$1"
+
 publish_result_file=$(mktemp $TMPDIR/publish-result.XXXXXX)
 publish_error_file=$(mktemp $TMPDIR/publish-error.XXXXXX)
 
@@ -54,7 +56,6 @@ if [ $publish_result_code -ne 0 ]; then
   exit 1
 fi
 
-version_string=$(sed -es'|^+ @'$scope'/'$package'@||' < $publish_result_file)
 echo "{\"version\":{\"version\":\"$version_string\"}}" \
 | jq . \
 >&3
