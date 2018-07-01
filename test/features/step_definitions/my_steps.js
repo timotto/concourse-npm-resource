@@ -14,7 +14,6 @@ const assertEnv = key => {
 setDefaultTimeout(30000);
 
 const unitUnderTest = process.env['DOCKER_IMAGE'] || 'timotto/concourse-npm-resource:latest';
-console.log(`DOCKER_IMAGE=${unitUnderTest}`);
 
 let testRegistry;
 let credentials;
@@ -46,7 +45,7 @@ Given(/^a source configuration for private package "(.*)" with (.*) credentials$
   this.input.source = sourceDefinition(privatePackageName, undefined, { uri: testRegistry, token: credentials[credentialSet] }));
 
 Given(/^a get step with skip_download: (.*) params$/, skipDownload =>
-  this.input.params = {skip_download: skipDownload === 'true'});
+  this.input.params = { skip_download: skipDownload === 'true' });
 
 Given(/^a known version "(.*)" for the resource$/, version =>
   this.input.version = { version });
@@ -76,19 +75,35 @@ Then(/^the content of file "(.*)" is "(.*)"$/, async (filename, content) => {
 });
 
 Then(/^the file "(.*)" does exist$/, async filename =>
-  assert.strictEqual(await findTempFile(filename),true));
+  assert.strictEqual(await findTempFile(filename), true));
 
 Then(/^the file "(.*)" does not exist$/, async filename =>
-  assert.strictEqual(await findTempFile(filename),false));
+  assert.strictEqual(await findTempFile(filename), false));
 
 const findTempFile = async filename =>
   fs.pathExists(path.join(this.tempDir, filename));
 
+const testRunner = process.env['TEST_RUNNER'] || 'docker';
+
 const runResource = async command =>
+  testRunner === 'docker'
+    ? runDockerResource(command)
+    : runShellResource(command);
+
+const runShellResource = async command => {
+  const localScriptPath = path.join('/','opt', 'resource', command);
+  return spawnIn(
+    localScriptPath,
+    [this.tempDir],
+    JSON.stringify(this.input))
+    .then(result =>
+      this.result = result);
+}
+
+const runDockerResource = async command =>
   spawnIn('docker', [
     'run', '--rm', '-i',
     '-v', `${this.tempDir}:/test-volume`,
-    '-w', '/test-volume',
     unitUnderTest,
     `/opt/resource/${command}`,
     '/test-volume'
