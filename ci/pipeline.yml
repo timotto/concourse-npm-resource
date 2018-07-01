@@ -1,0 +1,55 @@
+jobs:
+- name: test
+  serial: true
+  plan:
+  - aggregate:
+    - get: tests
+    - get: master
+      trigger: true
+      params:
+        save: true
+  - task: test
+    image: master
+    config:
+      platform: linux
+      inputs:
+      - name: tests
+      params:
+        TEST_RUNNER: shell
+        TEST_REGISTRY: ((test.registry))
+        CORRECT_CREDENTIALS: ((test.credentials.good))
+        INCORRECT_CREDENTIALS: ((test.credentials.bad))
+      run:
+        dir: tests/test
+        path: sh
+        args:
+        - -exc
+        - |
+          npm install
+          npm test
+  - put: latest
+    params:
+      load: master
+    get_params:
+      skip_download: true
+resources:
+- name: tests
+  type: git
+  source:
+    uri: https://github.com/timotto/concourse-npm-resource.git
+    paths:
+    - test
+- name: master
+  type: docker-image
+  webhook_token: ((docker.webhook_token))
+  check_every: 24h
+  source:
+    repository: timotto/concourse-npm-resource
+    tag: master
+- name: latest
+  type: docker-image
+  source:
+    repository: timotto/concourse-npm-resource
+    tag: latest
+    username: ((docker.username))
+    password: ((docker.password))
