@@ -1,16 +1,10 @@
 const { Given, Then, When, BeforeAll, Before, After, setDefaultTimeout } = require('cucumber');
 const assert = require('assert');
+const { spawn } = require('child_process');
 const fs = require('fs-extra');
 const path = require('path');
 const mktemp = require('mktemp');
 
-const { sourceDefinition } = require('../../src/pipeline-fixture');
-const { spawnIn } = require('../../src/resource-runner');
-
-const assertEnv = key => {
-  if (process.env[key] === undefined) throw `${key} is undefined`;
-  return process.env[key];
-}
 setDefaultTimeout(30000);
 
 const unitUnderTest = process.env['DOCKER_IMAGE'] || 'timotto/concourse-npm-resource:latest';
@@ -83,6 +77,12 @@ Then(/^the file "(.*)" does not exist$/, async filename =>
 const findTempFile = async filename =>
   fs.pathExists(path.join(this.tempDir, filename));
 
+const sourceDefinition = (packageName, scope = undefined, registry = undefined) => ({
+  package: packageName,
+  scope,
+  registry
+});
+
 const testRunner = process.env['TEST_RUNNER'] || 'docker';
 
 const runResource = async command =>
@@ -91,7 +91,7 @@ const runResource = async command =>
     : runShellResource(command);
 
 const runShellResource = async command => {
-  const localScriptPath = path.join('/','opt', 'resource', command);
+  const localScriptPath = path.join('/', 'opt', 'resource', command);
   return spawnIn(
     localScriptPath,
     [this.tempDir],
@@ -109,3 +109,21 @@ const runDockerResource = async command =>
     '/test-volume'
   ], JSON.stringify(this.input))
     .then(result => this.result = result);
+
+const spawnIn = async (command, args, input = undefined) =>
+  new Promise(resolve => {
+    const result = { stdout: "", stderr: "" };
+    const x = spawn(command, args);
+    x.stdout.on('data', data => result.stdout += data);
+    x.stderr.on('data', data => result.stderr += data);
+    x.on('exit', code => resolve(({ code, ...result })));
+    if (input) {
+      x.stdin.write(input);
+      x.stdin.end();
+    }
+  });
+
+const assertEnv = key => {
+  if (process.env[key] === undefined) throw `${key} is undefined`;
+  return process.env[key];
+}
