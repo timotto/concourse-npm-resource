@@ -42,7 +42,7 @@ cd "$1/$package_path"
 # optional version override though "params: {version: path/to/version/file}"
 [ -n "$version_string" ] \
 && npm version "$version_string" \
-|| true
+|| version_string=$(jq -r .version < package.json)
 
 echo "Publishing..."
 npm publish \
