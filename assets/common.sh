@@ -9,6 +9,8 @@ scope=""
 yarn_args=""
 
 setup_npmrc() {
+    echo -n > $HOME/.npmrc
+    
     if [ -n "$token" ]; then
         token_target="${registry:-https://registry.npmjs.org/}"
         token_target="${token_target/http*:/}"
