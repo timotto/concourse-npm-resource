@@ -5,6 +5,8 @@ const fs = require('fs-extra');
 const path = require('path');
 const mktemp = require('mktemp');
 
+const npmUtil = require('./util/npm-registry');
+
 setDefaultTimeout(30000);
 
 const unitUnderTest = process.env['DOCKER_IMAGE'] || 'timotto/concourse-npm-resource:latest';
@@ -32,10 +34,10 @@ Before(async () => {
 After(async () =>
   fs.remove(this.tempDir));
 
-Given(/^a source configuration for package "([^"]*)"$/, async packageName =>
+Given(/^a source configuration for package "(.*)"$/, async packageName =>
   this.input.source = sourceDefinition(packageName));
 
-Given(/^a source configuration for private package "(.*)" with (.*) credentials$/, async (privatePackageName, credentialSet) =>
+Given(/^a source configuration for private package "(.*)" with (correct|incorrect|empty|missing) credentials$/, async (privatePackageName, credentialSet) =>
   this.input.source = sourceDefinition(privatePackageName, undefined, { uri: testRegistry, token: credentials[credentialSet] }));
 
 Given(/^a get step with skip_download: (.*) params$/, skipDownload =>
@@ -58,8 +60,9 @@ Then(/^version "([^"]*)" is returned$/, expectedVersion => {
   const j = JSON.parse(this.result.stdout);
 
   assert.notEqual(j, undefined);
-  assert.strictEqual(j.length, 1);
-  assert.strictEqual(j[0].version, expectedVersion);
+  const actualVersion = j.version !== undefined ? j.version.version : j[0] !== undefined ? j[0].version : undefined;
+
+  assert.strictEqual(actualVersion, expectedVersion);
 });
 
 Then(/^the content of file "(.*)" is "(.*)"$/, async (filename, content) => {
@@ -73,6 +76,43 @@ Then(/^the file "(.*)" does exist$/, async filename =>
 
 Then(/^the file "(.*)" does not exist$/, async filename =>
   assert.strictEqual(await findTempFile(filename), false));
+
+Given(/^the registry has (a|no) package "(.*)" available in version "(.*)"$/, async (aOrNo, packageName, version) =>
+  aOrNo === 'a'
+    ? npmUtil.ensurePackageVersionAvailable(this.tempDir, testRegistry, credentials.correct, packageName, version)
+    : npmUtil.ensurePackageVersionNotAvailable(testRegistry, credentials.correct, packageName, version));
+
+Given(/^I have a put step with params package: "([^\"]*)"$/, packageName =>
+  this.input.params = {
+    path: 'source-code'
+  });
+
+Given(/^I have a put step with params package: "([^\"]*)" and delete: (true|false) and version: "(.*)"$/, async (packageName, isDelete, version) =>
+  fs.writeFile(path.join(this.tempDir, 'version'), version)
+    .then(() =>
+      this.input.params = {
+        path: 'source-code',
+        delete: isDelete === 'true',
+        version: 'version'
+      }));
+
+Given(/^I have (valid|invalid) npm package source code for package "(.*)" with version "(.*)"$/, async (validOrInvalid, packageName, version) => {
+  const packageDirectory = path.join(this.tempDir, 'source-code')
+  await fs.mkdirs(packageDirectory);
+
+  if (validOrInvalid === 'valid')
+    await npmUtil.inventPackage(packageDirectory, packageName, version);
+});
+
+
+When(/^the package is published$/, async () =>
+  runResource('out'));
+
+Then(/^there should be (a|no) package "(.*)" available with version "(.*)" in the registry$/, async (aOrNo, packageName, wantedVersion) =>
+  assert.strictEqual(
+    await (npmUtil.getPackageVersions(testRegistry, credentials.correct, packageName)
+      .then(versions => versions.filter(version => version === wantedVersion).length)),
+    aOrNo === 'a' ? 1 : 0));
 
 const findTempFile = async filename =>
   fs.pathExists(path.join(this.tempDir, filename));
