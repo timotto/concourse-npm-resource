@@ -53,13 +53,13 @@ When(/^the resource is fetched$/, async () =>
   runResource('in'));
 
 Then(/^an error is returned$/, () =>
-  assert.notEqual(this.result.code, 0));
+  assert.notEqual(this.result.code, 0, new Error(`expected an error but result code is 0\n${this.result.stdout}`)));
 
 Then(/^version "([^"]*)" is returned$/, expectedVersion => {
-  assert.strictEqual(this.result.code, 0);
+  assert.strictEqual(this.result.code, 0, new Error(`expected success but result code is ${this.result.code}\n${this.result.stderr}`));
   const j = JSON.parse(this.result.stdout);
 
-  assert.notEqual(j, undefined);
+  assert.notEqual(j, undefined, new Error(`expected stdout to contain JSON but is empty\n${this.result.stderr}`));
   const actualVersion = j.version !== undefined ? j.version.version : j[0] !== undefined ? j[0].version : undefined;
 
   assert.strictEqual(actualVersion, expectedVersion);
