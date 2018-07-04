@@ -40,8 +40,11 @@ After(async () => (process.env['NORMRF'] || 'false') === 'true' ? Promise.resolv
 Given(/^a source configuration for package "(.*)"$/, async packageName =>
   this.input.source = sourceDefinition(packageName));
 
-Given(/^a source configuration for private package "(.*)" with (correct|incorrect|empty|missing) credentials$/, async (privatePackageName, credentialSet) =>
+Given(/^a source configuration for private package "([^"]*)" with (correct|incorrect|empty|missing) credentials$/, async (privatePackageName, credentialSet) =>
   this.input.source = sourceDefinition(privatePackageName, undefined, { uri: testRegistry, token: credentials[credentialSet] }));
+
+Given(/^a source configuration for private package "(.*)" scope "(@.*)" with (correct|incorrect|empty|missing) credentials$/, async (privatePackageName, scope, credentialSet) =>
+  this.input.source = sourceDefinition(privatePackageName, scope, { uri: testRegistry, token: credentials[credentialSet] }));
 
 Given(/^a get step with skip_download: (.*) params$/, skipDownload =>
   this.input.params = { skip_download: skipDownload === 'true' });
