@@ -1,20 +1,19 @@
 jobs:
-- name: test
-  serial: true
+- name: publish
   plan:
-  - aggregate:
-    - get: tests
-      trigger: true
-    - get: master
-      trigger: true
-      params:
-        save: true
+  - get: source-code
+    trigger: true
+  - put: master
+    params:
+      build: source-code
+    get_params:
+      save: true
   - task: test
     image: master
     config:
       platform: linux
       inputs:
-      - name: tests
+      - name: source-code
       caches:
       - path: cache/npm
       params:
@@ -30,7 +29,7 @@ jobs:
         - -exc
         - |
           export NPM_CONFIG_CACHE=$PWD/cache/npm
-          cd tests/test
+          cd source-code/test
           npm install
           npm test
   - put: latest
@@ -39,12 +38,10 @@ jobs:
     get_params:
       skip_download: true
 resources:
-- name: tests
+- name: source-code
   type: git
   source:
     uri: https://github.com/timotto/concourse-npm-resource.git
-    paths:
-    - test
 - name: master
   type: docker-image
   webhook_token: ((docker.webhook_token))
@@ -52,6 +49,8 @@ resources:
   source:
     repository: timotto/concourse-npm-resource
     tag: master
+    username: ((docker.username))
+    password: ((docker.password))
 - name: latest
   type: docker-image
   source:
