@@ -39,6 +39,13 @@ echo "Resource setup successful."
 
 cd "$1/$package_path"
 
+manifestName="$(jq -r .name < package.json)"
+
+if [ ! "$package" = "$manifestName" ]; then
+  echo "package name in resource definition and package.json don't match, $package vs $manifestName"
+  exit 1
+fi
+
 # optional version override though "params: {version: path/to/version/file}"
 [ -n "$version_string" ] \
 && npm version "$version_string" \
