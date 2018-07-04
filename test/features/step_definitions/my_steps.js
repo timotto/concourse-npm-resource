@@ -13,8 +13,13 @@ const unitUnderTest = process.env['DOCKER_IMAGE'] || 'timotto/concourse-npm-reso
 
 let testRegistry;
 let credentials;
+let basePath;
 
-BeforeAll(() => {
+const testRunner = process.env['TEST_RUNNER'] || 'docker';
+
+BeforeAll(async () => {
+  basePath = path.join(process.env['TEMP'] || '/tmp', 'npm-resource-test-tmp');
+  await fs.mkdirs(basePath);
   testRegistry = assertEnv('TEST_REGISTRY');
   credentials = {
     correct: assertEnv('CORRECT_CREDENTIALS'),
@@ -25,13 +30,11 @@ BeforeAll(() => {
 });
 
 Before(async () => {
-  const base = path.join(process.cwd(), 'tmp');
-  await fs.mkdirs(base);
-  this.tempDir = await mktemp.createDir(path.join(base, 'npm-resource-test-volume-XXXXXXXX'));
+  this.tempDir = await mktemp.createDir(path.join(basePath, 'npm-resource-test-volume-XXXXXXXX'));
   this.input = {};
 });
 
-After(async () =>
+After(async () => (process.env['NORMRF'] || 'false') === 'true' ? Promise.resolve() :
   fs.remove(this.tempDir));
 
 Given(/^a source configuration for package "(.*)"$/, async packageName =>
@@ -96,12 +99,15 @@ Given(/^I have a put step with params package: "([^\"]*)" and delete: (true|fals
         version: 'version'
       }));
 
-Given(/^I have (valid|invalid) npm package source code for package "(.*)" with version "(.*)"$/, async (validOrInvalid, packageName, version) => {
+Given(/^I have (valid|invalid) npm package source code for package "(.*)" with version "([^"]*)"/, async (validOrInvalid, packageName, version) => {
   const packageDirectory = path.join(this.tempDir, 'source-code')
   await fs.mkdirs(packageDirectory);
 
   if (validOrInvalid === 'valid')
-    await npmUtil.inventPackage(packageDirectory, packageName, version);
+    await npmUtil.inventPackage(packageDirectory, packageName, version,
+      this.input.source.registry !== undefined
+        ? this.input.source.registry.uri
+        : undefined);
 });
 
 
@@ -122,8 +128,6 @@ const sourceDefinition = (packageName, scope = undefined, registry = undefined) 
   scope,
   registry
 });
-
-const testRunner = process.env['TEST_RUNNER'] || 'docker';
 
 const runResource = async command =>
   testRunner === 'docker'

@@ -4,6 +4,7 @@ jobs:
   plan:
   - aggregate:
     - get: tests
+      trigger: true
     - get: master
       trigger: true
       params:
@@ -14,17 +15,22 @@ jobs:
       platform: linux
       inputs:
       - name: tests
+      caches:
+      - path: cache/npm
       params:
         TEST_RUNNER: shell
         TEST_REGISTRY: ((test.registry))
         CORRECT_CREDENTIALS: ((test.credentials.good))
         INCORRECT_CREDENTIALS: ((test.credentials.bad))
+        NEXUS_WORKAROUND: true
+        NORMRF: false
       run:
-        dir: tests/test
         path: sh
         args:
         - -exc
         - |
+          export NPM_CONFIG_CACHE=$PWD/cache/npm
+          cd tests/test
           npm install
           npm test
   - put: latest

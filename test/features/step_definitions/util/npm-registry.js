@@ -14,8 +14,13 @@ regClient.get = promisify(regClient.get);
 regClient.unpublish = promisify(regClient.unpublish);
 regClient.publish = promisify(regClient.publish);
 
-const inventPackage = async (tempDirectory, packageName, version) =>
-    fs.writeFile(path.join(tempDirectory, 'package.json'), JSON.stringify({ name: packageName, version }))
+const addRegistryToPackageJson = (json, registry = undefined) =>
+    registry === undefined ? json : ({...json, "publishConfig": {
+        "registry": registry
+    }});
+
+const inventPackage = async (tempDirectory, packageName, version, registry = undefined) =>
+    fs.writeFile(path.join(tempDirectory, 'package.json'), JSON.stringify(addRegistryToPackageJson({ name: packageName, version }, registry)))
         .then(() => fs.writeFile(path.join(tempDirectory, 'README.md'), 'this package is the result of a step in a test automation setup'))
         .then(() => ['package.json', 'README.md']);
 
