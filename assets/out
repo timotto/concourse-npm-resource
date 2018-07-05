@@ -41,7 +41,7 @@ cd "$1/$package_path"
 
 manifestName="$(jq -r .name < package.json)"
 
-if [ ! "$scope/$package" = "$manifestName" ] && [ ! "$package" = "$manifestName" ]; then
+if [ ! "@$scope/$package" = "$manifestName" ] && [ ! "$package" = "$manifestName" ]; then
   echo "package name in resource definition and package.json don't match, $package vs $manifestName"
   exit 1
 fi

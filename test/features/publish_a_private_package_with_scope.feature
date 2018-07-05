@@ -5,7 +5,7 @@ Feature: Publish a private package
 
   Background: Private registry with an existing package
 
-    Given a source configuration for private package "publish-test" scope "@test" with correct credentials
+    Given a source configuration for private package "publish-test" scope "test" with correct credentials
     # While the Nexus workaround is required, because the workaround deletes ALL versions,
     # the order of the following statements must always be "no package" before "a package"
     And the registry has no package "publish-test-fail" available in version "1.2.3"
