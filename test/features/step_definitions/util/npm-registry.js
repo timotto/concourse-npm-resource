@@ -37,8 +37,8 @@ const publishInventedPackage = async (tempDirectory, registry, token, packageNam
             access: 'public',
             body: new Readable().wrap(tar.c({
                 gzip: true,
-                cwd: path.join(tempDirectory, unscopedPackageName(packageName))
-            }, files)),
+                cwd: tempDirectory
+            }, [unscopedPackageName(packageName)])),
             ...requestOptions(token)
         }));
 

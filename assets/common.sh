@@ -37,6 +37,7 @@ setup_npmrc() {
         if [ -z "$scope" ]; then
             yarn_args="--registry $registry "
             npm config set registry $registry
+            echo "  Registry change is global"
         fi
         echo "  Registry is $registry"
     fi
@@ -56,6 +57,6 @@ setup_resource() {
     package=$(jq -r '.source.package // ""' < $payload)
 
     echo "Initializing npmrc..."
-    setup_npmrc $1 $2
-    setup_package $1
+    setup_npmrc
+    setup_package
 }
