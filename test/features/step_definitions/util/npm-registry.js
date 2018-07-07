@@ -19,22 +19,25 @@ const addRegistryToPackageJson = (json, registry = undefined) =>
         "registry": registry
     }});
 
+const unscopedPackageName = packageName => packageName.replace(/^.*\//, '');
+
 const inventPackage = async (tempDirectory, packageName, version, registry = undefined) =>
-    fs.writeFile(path.join(tempDirectory, 'package.json'), JSON.stringify(addRegistryToPackageJson({ name: packageName, version }, registry)))
+    fs.mkdirs(tempDirectory)
+        .then(() =>fs.writeFile(path.join(tempDirectory, 'package.json'), JSON.stringify(addRegistryToPackageJson({ name: packageName, version }, registry))))
         .then(() => fs.writeFile(path.join(tempDirectory, 'README.md'), 'this package is the result of a step in a test automation setup'))
         .then(() => ['package.json', 'README.md']);
 
 const publishInventedPackage = async (tempDirectory, registry, token, packageName, version) =>
-    inventPackage(tempDirectory, packageName, version)
+    inventPackage(path.join(tempDirectory, unscopedPackageName(packageName)), packageName, version)
         .then(files => regClient.publish(packageUrl(registry, packageName), {
             metadata: {
-                "name": packageName.split('/').reduce((p, c, i, a) => a[a.length - 1]),
+                "name": unscopedPackageName(packageName),
                 "version": version
             },
             access: 'public',
             body: new Readable().wrap(tar.c({
                 gzip: true,
-                cwd: tempDirectory
+                cwd: path.join(tempDirectory, unscopedPackageName(packageName))
             }, files)),
             ...requestOptions(token)
         }));

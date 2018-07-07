@@ -40,13 +40,13 @@ After(async () => (process.env['NORMRF'] || 'false') === 'true' ? Promise.resolv
 Given(/^a source configuration for package "(.*)"$/, async packageName =>
   this.input.source = sourceDefinition(packageName));
 
-Given(/^a source configuration for private package "([^"]*)" with (correct|incorrect|empty|missing) credentials$/, async (privatePackageName, credentialSet) =>
-  this.input.source = sourceDefinition(privatePackageName, undefined, { uri: testRegistry, token: credentials[credentialSet] }));
+Given(/^a source configuration for (private|public) package "([^"]*)" with (correct|incorrect|empty|missing) credentials$/, async (privateOrPublic, packageName, credentialSet) =>
+  this.input.source = sourceDefinition(packageName, undefined, { uri: privateOrPublic === 'private' ? testRegistry : undefined, token: credentials[credentialSet] }));
 
 Given(/^a source configuration for private package "(.*)" scope "([^@].*)" with (correct|incorrect|empty|missing) credentials$/, async (privatePackageName, scope, credentialSet) =>
   this.input.source = sourceDefinition(privatePackageName, scope, { uri: testRegistry, token: credentials[credentialSet] }));
 
-Given(/^a get step with skip_download: (.*) params$/, skipDownload =>
+Given(/^a get step with skip_download: (true|false) params$/, skipDownload =>
   this.input.params = { skip_download: skipDownload === 'true' });
 
 Given(/^a known version "(.*)" for the resource$/, version =>
@@ -59,7 +59,7 @@ When(/^the resource is fetched$/, async () =>
   runResource('in'));
 
 Then(/^an error is returned$/, () =>
-  assert.notEqual(this.result.code, 0, new Error(`expected an error but result code is 0\n${this.result.stdout}`)));
+  assert.notEqual(this.result.code, 0, new Error(`expected an error but result code is 0\n${this.result.stdout}${this.result.stderr}`)));
 
 Then(/^version "([^"]*)" is returned$/, expectedVersion => {
   assert.strictEqual(this.result.code, 0, new Error(`expected success but result code is ${this.result.code}\n${this.result.stderr}`));
@@ -102,16 +102,12 @@ Given(/^I have a put step with params package: "([^\"]*)" and delete: (true|fals
         version: 'version'
       }));
 
-Given(/^I have (valid|invalid) npm package source code for package "(.*)" with version "([^"]*)"/, async (validOrInvalid, packageName, version) => {
-  const packageDirectory = path.join(this.tempDir, 'source-code')
-  await fs.mkdirs(packageDirectory);
-
-  if (validOrInvalid === 'valid')
-    await npmUtil.inventPackage(packageDirectory, packageName, version,
+Given(/^I have (valid|invalid) npm package source code for package "(.*)" with version "([^"]*)"/, async (validOrInvalid, packageName, version) =>
+  validOrInvalid === 'invalid' ? fs.mkdirs(path.join(this.tempDir, 'source-code')) :
+    npmUtil.inventPackage(path.join(this.tempDir, 'source-code'), packageName, version,
       this.input.source.registry !== undefined
         ? this.input.source.registry.uri
-        : undefined);
-});
+        : undefined));
 
 
 When(/^the package is published$/, async () =>

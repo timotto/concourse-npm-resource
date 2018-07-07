@@ -34,11 +34,11 @@ Feature: Get a public package
     
   Scenario: Friendly error when a version does not exist lower than a current version
     
-    The package named "package" really exists, but it does not have a version "0.0.1".
+    The package named "package" really exists, but it does not have a version "0.0.2".
 
     Given a source configuration for package "package"
     And a get step with skip_download: false params
-    And a known version "0.0.1" for the resource
+    And a known version "0.0.2" for the resource
     When the resource is fetched
     Then an error is returned
     And the file "version" does not exist
