@@ -3,32 +3,53 @@ jobs:
   plan:
   - get: source-code
     trigger: true
+  - get: docker-image-resource-source-code
   - put: master
     params:
       build: source-code
     get_params:
       save: true
   - task: test
-    image: master
+    privileged: true
+    # private registry is flaky
+    attempts: 2
     config:
       platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: node
+          tag: alpine
       inputs:
       - name: source-code
+      - name: docker-image-resource-source-code
+      - name: master
       caches:
+      - path: cache/apk
       - path: cache/npm
       params:
-        TEST_RUNNER: shell
+        TEST_RUNNER: docker
         TEST_REGISTRY: ((test.registry))
         CORRECT_CREDENTIALS: ((test.credentials.good))
         INCORRECT_CREDENTIALS: ((test.credentials.bad))
         NEXUS_WORKAROUND: true
-        NORMRF: false
+        NORMRF: true
+        DOCKER_IMAGE: unit-under-test
       run:
         path: sh
         args:
-        - -exc
+        - -ec
         - |
           export NPM_CONFIG_CACHE=$PWD/cache/npm
+          apk --update --cache-dir $PWD/cache/apk --no-progress add docker
+
+          . docker-image-resource-source-code/assets/common.sh
+          sanitize_cgroups
+          start_docker 3 3
+
+          docker load -i "master/image"
+          docker tag $(cat "master/image-id") $DOCKER_IMAGE
+
           cd source-code/test
           npm install
           npm test
@@ -40,8 +61,13 @@ jobs:
 resources:
 - name: source-code
   type: git
+  webhook_token: ((docker.webhook_token))
   source:
     uri: https://github.com/timotto/concourse-npm-resource.git
+- name: docker-image-resource-source-code
+  type: git
+  source:
+    uri: https://github.com/concourse/docker-image-resource.git
 - name: master
   type: docker-image
   webhook_token: ((docker.webhook_token))

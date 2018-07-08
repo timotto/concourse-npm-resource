@@ -15,8 +15,6 @@ let testRegistry;
 let credentials;
 let basePath;
 
-const testRunner = process.env['TEST_RUNNER'] || 'docker';
-
 BeforeAll(async () => {
   basePath = path.join(process.env['TEMP'] || '/tmp', 'npm-resource-test-tmp');
   await fs.mkdirs(basePath);
@@ -128,22 +126,7 @@ const sourceDefinition = (packageName, scope = undefined, registry = undefined) 
   registry
 });
 
-const runResource = async command =>
-  testRunner === 'docker'
-    ? runDockerResource(command)
-    : runShellResource(command);
-
-const runShellResource = async command => {
-  const localScriptPath = path.join('/', 'opt', 'resource', command);
-  return spawnIn(
-    localScriptPath,
-    [this.tempDir],
-    JSON.stringify(this.input))
-    .then(result =>
-      this.result = result);
-}
-
-const runDockerResource = async command =>
+const runResource = async command => 
   spawnIn('docker', [
     'run', '--rm', '-i',
     '-v', `${this.tempDir}:/test-volume`,
