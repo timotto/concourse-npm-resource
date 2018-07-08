@@ -34,12 +34,11 @@ setup_npmrc() {
     fi
 
     if [ -n "$registry" ]; then
+        echo "  Registry is $registry"
         if [ -z "$scope" ]; then
-            yarn_args="--registry $registry "
             npm config set registry $registry
             echo "  Registry change is global"
         fi
-        echo "  Registry is $registry"
     fi
 }
 
