@@ -59,3 +59,7 @@ setup_resource() {
     setup_npmrc
     setup_package
 }
+
+npm() {
+    su node -c "npm $*"
+}

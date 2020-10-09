@@ -25,7 +25,7 @@ skip_download=$(jq -r '.params.skip_download // ""' < $payload)
 setup_resource
 echo "Resource setup successful."
 
-cd "$1"
+cd "$1" && chown -R node:node .
 
 [ -n "$scope" ] \
 && fqpn="@$scope/$package" \

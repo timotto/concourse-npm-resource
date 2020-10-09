@@ -37,7 +37,7 @@ fi
 setup_resource
 echo "Resource setup successful."
 
-cd "$1/$package_path"
+cd "$1/$package_path" && chown -R node:node .
 
 manifestName="$(jq -r .name < package.json)"
 
