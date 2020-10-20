@@ -9,14 +9,14 @@ scope=""
 yarn_args=""
 
 setup_npmrc() {
-    echo -n > $HOME/.npmrc
+    echo -n > /home/node/.npmrc
     
     if [ -n "$token" ]; then
         token_target="${registry:-https://registry.npmjs.org/}"
         token_target="${token_target/http*:/}"
         
         echo "${token_target}:_authToken=$token" \
-        >> $HOME/.npmrc
+        >> /home/node/.npmrc
 
         echo "  Using token for authentication"
     fi
@@ -28,7 +28,7 @@ setup_npmrc() {
         fi
 
         echo "@${scope}:registry=${registry}" \
-        >> $HOME/.npmrc
+        >> /home/node/.npmrc
 
         echo "  Scope limited to @$scope"
     fi
@@ -58,4 +58,8 @@ setup_resource() {
     echo "Initializing npmrc..."
     setup_npmrc
     setup_package
+}
+
+npm() {
+    su node -c "npm $*"
 }
