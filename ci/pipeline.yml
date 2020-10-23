@@ -30,8 +30,8 @@ jobs:
       params:
         TEST_RUNNER: docker
         TEST_REGISTRY: ((test.registry))
-        CORRECT_CREDENTIALS: ((test.credentials.good))
-        INCORRECT_CREDENTIALS: ((test.credentials.bad))
+        CORRECT_CREDENTIALS: ((test.credentials_good))
+        INCORRECT_CREDENTIALS: ((test.credentials_bad))
         NEXUS_WORKAROUND: true
         NORMRF: true
         DOCKER_IMAGE: unit-under-test
@@ -41,6 +41,8 @@ jobs:
         - -ec
         - |
           export NPM_CONFIG_CACHE=$PWD/cache/npm
+          apt-get update
+          apt-get install docker.io
           apk --update --cache-dir $PWD/cache/apk --no-progress add docker
 
           . docker-image-resource-source-code/assets/common.sh
@@ -61,7 +63,7 @@ jobs:
 resources:
 - name: source-code
   type: git
-  webhook_token: ((docker.webhook_token))
+  webhook_token: ((webhook_token))
   source:
     uri: https://github.com/timotto/concourse-npm-resource.git
 - name: docker-image-resource-source-code
@@ -70,17 +72,16 @@ resources:
     uri: https://github.com/concourse/docker-image-resource.git
 - name: master
   type: docker-image
-  webhook_token: ((docker.webhook_token))
   check_every: 24h
   source:
     repository: timotto/concourse-npm-resource
     tag: master
-    username: ((docker.username))
-    password: ((docker.password))
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
 - name: latest
   type: docker-image
   source:
     repository: timotto/concourse-npm-resource
     tag: latest
-    username: ((docker.username))
-    password: ((docker.password))
+    username: ((dockerhub.username))
+    password: ((dockerhub.password))
