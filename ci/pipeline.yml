@@ -11,39 +11,48 @@ jobs:
       save: true
   - task: test
     privileged: true
-    # private registry is flaky
-    attempts: 2
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: node
-          tag: alpine
+          tag: latest
       inputs:
       - name: source-code
       - name: docker-image-resource-source-code
       - name: master
       caches:
-      - path: cache/apk
       - path: cache/npm
       params:
         TEST_RUNNER: docker
         TEST_REGISTRY: ((test.registry))
         CORRECT_CREDENTIALS: ((test.credentials_good))
         INCORRECT_CREDENTIALS: ((test.credentials_bad))
-        NEXUS_WORKAROUND: true
+        NEXUS_WORKAROUND: false
         NORMRF: true
         DOCKER_IMAGE: unit-under-test
       run:
-        path: sh
+        path: bash
         args:
         - -ec
         - |
           export NPM_CONFIG_CACHE=$PWD/cache/npm
           apt-get update
-          apt-get install docker.io
-          apk --update --cache-dir $PWD/cache/apk --no-progress add docker
+          apt-get install -y \
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg-agent \
+            software-properties-common
+          curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
+          apt-key fingerprint 0EBFCD88
+          add-apt-repository \
+            "deb [arch=amd64] https://download.docker.com/linux/debian \
+            $(lsb_release -cs) \
+            stable"
+          apt-get update
+          apt-get install -y docker-ce docker-ce-cli containerd.io
 
           . docker-image-resource-source-code/assets/common.sh
           sanitize_cgroups
