@@ -67,6 +67,8 @@ jobs:
   - put: latest
     params:
       load: master
+      tag_file: source-code/.git/short_ref
+      tag_as_latest: true
     get_params:
       skip_download: true
 resources:
