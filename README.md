@@ -46,6 +46,7 @@ Publishes the given NPM package to a private or public registry.
 
 * `path`: *Required.* Path to the directory containing the `package.json` file.
 * `version`: *Optional.* Path to a file containing the version, overrides the version stored in `package.json`.
+* `public`: *Optional.* Boolean to publish npm package with args `--access public`. Default=false.
 
 ## Example
 
