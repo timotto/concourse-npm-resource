@@ -20,6 +20,6 @@
     "nodemon": "^1.17.5",
     "npm-registry-client": "^8.5.1",
     "request": "^2.87.0",
-    "tar": "^4.4.4"
+    "tar": "^4.4.15"
   }
 }
