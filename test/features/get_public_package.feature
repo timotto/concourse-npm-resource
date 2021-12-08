@@ -11,6 +11,7 @@ Feature: Get a public package
     When the resource is fetched
     Then the content of file "version" is "1.0.1"
     And the file "node_modules/package/package.json" does exist
+    And the homedir file ".npmrc" does not exist
     
   Scenario: Get a public package without download
     

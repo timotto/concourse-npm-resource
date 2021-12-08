@@ -8,7 +8,12 @@ registry=""
 scope=""
 yarn_args=""
 
+cleanup_npmrc() {
+    rm $HOME/.npmrc
+}
+
 setup_npmrc() {
+    trap cleanup_npmrc EXIT
     echo -n > $HOME/.npmrc
     
     if [ -n "$token" ]; then
@@ -50,10 +55,10 @@ setup_package() {
 }
 
 setup_resource() {
-    registry=$(jq -r '.source.registry.uri // ""' < $payload)
-    token=$(jq -r '.source.registry.token // ""' < $payload)
-    scope=$(jq -r '.source.scope // ""' < $payload)
-    package=$(jq -r '.source.package // ""' < $payload)
+    registry=$(jq -r '.source.registry.uri // ""' <<< $payload)
+    token=$(jq -r '.source.registry.token // ""' <<< $payload)
+    scope=$(jq -r '.source.scope // ""' <<< $payload)
+    package=$(jq -r '.source.package // ""' <<< $payload)
 
     echo "Initializing npmrc..."
     setup_npmrc

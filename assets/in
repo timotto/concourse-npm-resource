@@ -9,17 +9,16 @@ exec 1>&2 # redirect all output to stderr for logging
 source $(dirname "$0")/common.sh
 
 # Read inputs
-payload=$(mktemp $TMPDIR/request-payload.XXXXXX)
-cat > $payload <&0
+payload="$(cat <&0)"
 
-version_string=$(jq -r '.version.version // ""' < $payload)
+version_string=$(jq -r '.version.version // ""' <<< $payload)
 
 if [ -z "$version_string" ]; then
   echo "invalid payload (missing version)"
   exit 1
 fi
 
-skip_download=$(jq -r '.params.skip_download // ""' < $payload)
+skip_download=$(jq -r '.params.skip_download // ""' <<< $payload)
 
 # Prepare
 setup_resource
