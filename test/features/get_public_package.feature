@@ -11,7 +11,6 @@ Feature: Get a public package
     When the resource is fetched
     Then the content of file "version" is "1.0.1"
     And the file "node_modules/package/package.json" does exist
-    And the homedir file ".npmrc" does not exist
     
   Scenario: Get a public package without download
     
@@ -44,4 +43,11 @@ Feature: Get a public package
     Then an error is returned
     And the file "version" does not exist
     
-    
+  Scenario: Get a public package with additional repositories
+
+    Given a source configuration with additional_registries for package "pubbles" with scope "zeke" and registry "https://registry.npmjs.org"
+    And a get step with skip_download: false params
+    And a known version "1.0.0" for the resource
+    When the resource is fetched
+    Then the content of file "version" is "1.0.0"
+    And the homedir file ".npmrc" has additional_registries with scope "zeke" and registry "https://registry.npmjs.org"

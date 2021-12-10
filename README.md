@@ -20,6 +20,10 @@ resource_types:
 * `scope`: *Optional.* Use `scope-name` as scope value instead of using `@scope-name/package-name` as package name.
 * `registry.uri`: *Optional.* Registry containing the package, either a public mirror or a private registry. Defaults to `https://registry.npmjs.org/`.
 * `registry.token`: *Optional.* Access credentials for the registry, use `npm login` on your machine and look for the `_authToken` value in your `~/.npmrc`.
+* `additional_registries`: *Optional.* Array of additional registry entries to add to the `~/.npmrc` file.
+  This is useful if your private registry does not contain every package on which your private package depends.
+  * 'scope': *Optional.* Scope for the additional registry. Defaults to '' for (no scope).
+  * 'uri': *Required.* Additional registry uri. May be useful during a `get` step to allow npm to validate package dependencies.
 
 ## Behavior
 
@@ -61,10 +65,16 @@ resources:
   check_every: 24h
   source:
     package: jasmine
-    scope: @myorg
+    scope: myorg
     registry:
       uri: https://private.registry.domain/some/path
       token: NpmToken.as-seen-in-HOME-.npmrc
+    additional_registries:
+      # your org may have a separate registry to mirror npm and vet against supply chain attacks
+      - uri: https://private.registry.domain/npm-mirror/path
+      # you may have other private registries for different scopes?
+      - uri: https://private.registry.domain/other/path
+        scope: otherorg
 ```
 
 Add to job:

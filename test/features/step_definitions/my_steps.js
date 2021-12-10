@@ -42,6 +42,12 @@ After(async () => (process.env['NORMRF'] || 'false') === 'true' ? Promise.resolv
 Given(/^a source configuration for package "(.*)"$/, async packageName =>
   this.input.source = sourceDefinition(packageName));
 
+Given(/^a source configuration with additional_registries for package "(.*)" with scope "(.*)" and registry "(.*)"$/, async (packageName, scope, registry) =>
+  this.input.source = sourceDefinition(packageName, scope, {uri: registry}, [
+    {uri: registry},
+    {scope: scope, uri: registry}
+  ]))
+
 Given(/^a source configuration for (private|public) package "([^"]*)" with (correct|incorrect|empty|missing) credentials$/, async (privateOrPublic, packageName, credentialSet) =>
   this.input.source = sourceDefinition(packageName, undefined, { uri: privateOrPublic === 'private' ? testRegistry : undefined, token: credentials[credentialSet] }));
 
@@ -85,8 +91,20 @@ Then(/^the file "(.*)" does exist$/, async filename =>
 Then(/^the file "(.*)" does not exist$/, async filename =>
   assert.strictEqual(await findTempFile(filename), false));
 
-Then(/^the homedir file "(.*)" does not exist$/, async filename =>
-  assert.strictEqual(await findHomeFile(filename), false));
+Then(/^the homedir file "(.*)" token is sanitized$/, async filename => {
+  const expectedContent = /_authToken=xxxx[\n$]/;
+  const unexpectedContent = new RegExp(`${credentials.correct}|${credentials.incorrect}`);
+  const actualContent = await fs.readFile(path.join(this.testHome, filename), 'utf-8');
+  console.log(actualContent);
+  assert.match(actualContent, expectedContent);
+  assert.doesNotMatch(actualContent, unexpectedContent, credentials);
+});
+
+Then(/^the homedir file "(.*)" has additional_registries with scope "(.*)" and registry "(.*)"$/, async (filename, scope, registry) => {
+  const expectedContent = `registry=${registry}\\b\n@${scope}:registry=${registry}\\b`.replace(/[\.]/g, m => `\\${m}`);
+  const actualContent = await fs.readFile(path.join(this.testHome, filename), 'utf-8');
+  assert.match(actualContent, new RegExp(expectedContent));
+});
 
 Given(/^the registry has (a|no) package "(.*)" available in version "(.*)"$/, async (aOrNo, packageName, version) =>
   aOrNo === 'a'
@@ -130,10 +148,11 @@ const findTempFile = async filename =>
 const findHomeFile = async filename =>
   fs.pathExists(path.join(this.testHome, filename));
 
-const sourceDefinition = (packageName, scope = undefined, registry = undefined) => ({
+const sourceDefinition = (packageName, scope = undefined, registry = undefined, additional_registries = undefined) => ({
   package: packageName,
   scope,
-  registry
+  registry,
+  additional_registries
 });
 
 const runResource = async command => 

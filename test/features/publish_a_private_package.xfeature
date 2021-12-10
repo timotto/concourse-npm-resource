@@ -19,7 +19,7 @@ Feature: Publish a private package
     When the package is published
     Then version "1.2.3" is returned
     And there should be a package "publish-test" available with version "1.2.3" in the registry
-    And the homedir file ".npmrc" does not exist
+    And the homedir file ".npmrc" token is sanitized
 
   Scenario: Uploading a package to a private registry using explicit version definition
 
