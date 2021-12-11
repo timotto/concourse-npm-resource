@@ -44,7 +44,9 @@ jobs:
             ca-certificates \
             curl \
             gnupg-agent \
-            software-properties-common
+            software-properties-common \
+            iproute2
+
           curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
           apt-key fingerprint 0EBFCD88
           add-apt-repository \
@@ -77,6 +79,8 @@ resources:
   webhook_token: ((webhook_token))
   source:
     uri: https://github.com/timotto/concourse-npm-resource.git
+    ignore_path:
+    - ci
 - name: docker-image-resource-source-code
   type: git
   source:
