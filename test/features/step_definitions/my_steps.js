@@ -29,6 +29,10 @@ BeforeAll(async () => {
 
 Before(async () => {
   this.tempDir = await mktemp.createDir(path.join(basePath, 'npm-resource-test-volume-XXXXXXXX'));
+  this.testVolume = path.join(this.tempDir, 'test-volume');
+  this.testHome = path.join(this.tempDir, 'root');
+  await fs.mkdirs(this.testVolume);
+  await fs.mkdirs(this.testHome);
   this.input = {};
 });
 
@@ -37,6 +41,12 @@ After(async () => (process.env['NORMRF'] || 'false') === 'true' ? Promise.resolv
 
 Given(/^a source configuration for package "(.*)"$/, async packageName =>
   this.input.source = sourceDefinition(packageName));
+
+Given(/^a source configuration with additional_registries for package "(.*)" with scope "(.*)" and registry "(.*)"$/, async (packageName, scope, registry) =>
+  this.input.source = sourceDefinition(packageName, scope, {uri: registry}, [
+    {uri: registry},
+    {scope: scope, uri: registry}
+  ]))
 
 Given(/^a source configuration for (private|public) package "([^"]*)" with (correct|incorrect|empty|missing) credentials$/, async (privateOrPublic, packageName, credentialSet) =>
   this.input.source = sourceDefinition(packageName, undefined, { uri: privateOrPublic === 'private' ? testRegistry : undefined, token: credentials[credentialSet] }));
@@ -71,7 +81,7 @@ Then(/^version "([^"]*)" is returned$/, expectedVersion => {
 
 Then(/^the content of file "(.*)" is "(.*)"$/, async (filename, content) => {
   const expectedContent = `${content}\n`;
-  const actualContent = await fs.readFile(path.join(this.tempDir, filename), 'utf-8');
+  const actualContent = await fs.readFile(path.join(this.testVolume, filename), 'utf-8');
   assert.strictEqual(actualContent, expectedContent);
 });
 
@@ -81,9 +91,24 @@ Then(/^the file "(.*)" does exist$/, async filename =>
 Then(/^the file "(.*)" does not exist$/, async filename =>
   assert.strictEqual(await findTempFile(filename), false));
 
+Then(/^the homedir file "(.*)" token is sanitized$/, async filename => {
+  const expectedContent = /_authToken=xxxx[\n$]/;
+  const unexpectedContent = new RegExp(`${credentials.correct}|${credentials.incorrect}`);
+  const actualContent = await fs.readFile(path.join(this.testHome, filename), 'utf-8');
+  console.log(actualContent);
+  assert.match(actualContent, expectedContent);
+  assert.doesNotMatch(actualContent, unexpectedContent, credentials);
+});
+
+Then(/^the homedir file "(.*)" has additional_registries with scope "(.*)" and registry "(.*)"$/, async (filename, scope, registry) => {
+  const expectedContent = `registry=${registry}\\b\n@${scope}:registry=${registry}\\b`.replace(/[\.]/g, m => `\\${m}`);
+  const actualContent = await fs.readFile(path.join(this.testHome, filename), 'utf-8');
+  assert.match(actualContent, new RegExp(expectedContent));
+});
+
 Given(/^the registry has (a|no) package "(.*)" available in version "(.*)"$/, async (aOrNo, packageName, version) =>
   aOrNo === 'a'
-    ? npmUtil.ensurePackageVersionAvailable(this.tempDir, testRegistry, credentials.correct, packageName, version)
+    ? npmUtil.ensurePackageVersionAvailable(this.testVolume, testRegistry, credentials.correct, packageName, version)
     : npmUtil.ensurePackageVersionNotAvailable(testRegistry, credentials.correct, packageName, version));
 
 Given(/^I have a put step with params package: "([^\"]*)"$/, packageName =>
@@ -92,7 +117,7 @@ Given(/^I have a put step with params package: "([^\"]*)"$/, packageName =>
   });
 
 Given(/^I have a put step with params package: "([^\"]*)" and delete: (true|false) and version: "(.*)"$/, async (packageName, isDelete, version) =>
-  fs.writeFile(path.join(this.tempDir, 'version'), version)
+  fs.writeFile(path.join(this.testVolume, 'version'), version)
     .then(() =>
       this.input.params = {
         path: 'source-code',
@@ -101,8 +126,8 @@ Given(/^I have a put step with params package: "([^\"]*)" and delete: (true|fals
       }));
 
 Given(/^I have (valid|invalid) npm package source code for package "(.*)" with version "([^"]*)"/, async (validOrInvalid, packageName, version) =>
-  validOrInvalid === 'invalid' ? fs.mkdirs(path.join(this.tempDir, 'source-code')) :
-    npmUtil.inventPackage(path.join(this.tempDir, 'source-code'), packageName, version,
+  validOrInvalid === 'invalid' ? fs.mkdirs(path.join(this.testVolume, 'source-code')) :
+    npmUtil.inventPackage(path.join(this.testVolume, 'source-code'), packageName, version,
       this.input.source.registry !== undefined
         ? this.input.source.registry.uri
         : undefined));
@@ -118,18 +143,23 @@ Then(/^there should be (a|no) package "(.*)" available with version "(.*)" in th
     aOrNo === 'a' ? 1 : 0));
 
 const findTempFile = async filename =>
-  fs.pathExists(path.join(this.tempDir, filename));
+  fs.pathExists(path.join(this.testVolume, filename));
 
-const sourceDefinition = (packageName, scope = undefined, registry = undefined) => ({
+const findHomeFile = async filename =>
+  fs.pathExists(path.join(this.testHome, filename));
+
+const sourceDefinition = (packageName, scope = undefined, registry = undefined, additional_registries = undefined) => ({
   package: packageName,
   scope,
-  registry
+  registry,
+  additional_registries
 });
 
 const runResource = async command => 
   spawnIn('docker', [
     'run', '--rm', '-i',
-    '-v', `${this.tempDir}:/test-volume`,
+    '-v', `${this.testVolume}:/test-volume`,
+    '-v', `${this.testHome}:/root`,
     unitUnderTest,
     `/opt/resource/${command}`,
     '/test-volume'

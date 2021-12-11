@@ -14,17 +14,16 @@ publish_result_file=$(mktemp $TMPDIR/publish-result.XXXXXX)
 publish_error_file=$(mktemp $TMPDIR/publish-error.XXXXXX)
 
 # Read inputs
-payload=$(mktemp $TMPDIR/request-payload.XXXXXX)
-cat > $payload <&0
+payload="$(cat <&0)"
 
-package_path=$(jq -r '.params.path // ""' < $payload)
+package_path=$(jq -r '.params.path // ""' <<< $payload)
 
 if [ -z "$package_path" ]; then
   echo "invalid payload (missing path)"
   exit 1
 fi
 
-version=$(jq -r '.params.version // ""' < $payload)
+version=$(jq -r '.params.version // ""' <<< $payload)
 if [ -n "$version" ]; then
   if [ ! -f "$1/$version" ]; then
     echo "unable to find version file '$version'"
@@ -53,7 +52,7 @@ fi
 
 args=""
 # optional publish package with '--access public' through "params: {public: true}"
-public=$(jq -r '.params.public' < $payload)
+public=$(jq -r '.params.public' <<< $payload)
 if [ "$public" = true ]; then
   args=" --access public"
 fi
